@@ -1,0 +1,29 @@
+#! /bin/bash
+# bootstrap a new box with my setup
+
+for REM in "$@"; do
+    # make sure github.com's ssh key is known so the clone doesn't ask
+    # clone my dotfile repo
+    # else pull it if already cloned
+    for cmd in \
+      'uptime' \
+      'test -d ~/src || mkdir ~/src' \
+      'grep -q github.com ~/.ssh/known_hosts || ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts' \
+      'cd ~/src; test -d dotfile || git clone git@github.com:roymarantz/dotfile.git' \
+      'cd ~/src/dotfile; git pull;' \
+      'cd ~/src; test -d tumblr-dkcerfiles || git clone git@github.tumblr.net:marantz/tumblr-dotfiles.git' \
+      'cd ~/src/dotfile; git pull;' \
+      'cd ~/src/dotfile; ./INSTALL ${FORCE}'
+    do
+	echo ssh -n "'$REM'" "'$cmd'"
+	$DEB ssh -n "$REM" "$cmd"
+    done
+done
+
+exit  # not using the for now
+puppet recipe needs work
+echo 'running puppet'
+ssh -t "$REM"  'cd ~/src/dotfile;
+    test -r marantz.pp
+      && sudo puppet apply ./marantz.pp
+      || echo not running puppet'

@@ -1,0 +1,5 @@
+#! /bin/bash
+# -*- shell-script -*-
+# fix up the .ssh/ssh_auth_sock link
+socket=`find /tmp/ssh* -name agent.\* | head -1`
+ln -sf $socket /home/marantz/.ssh/ssh_auth_sock

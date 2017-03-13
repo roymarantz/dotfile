@@ -1,0 +1,104 @@
+#! /bin/bash
+
+# to be used in PROMPT_COMMAND on bash
+# replaces stuff tumblr supplies to be less obtrusive
+
+function prompt {
+    local host TITLEBAR lvl
+    case $(hostname) in
+	UNKNOWN-*.yahoo.com)                    host='laptop'  ;;
+        tumblr-MacBookAir-990350*)         host='laptop'  ;;
+	*)
+	    host='\H\'
+	    ;;
+    esac
+
+    local BLUE='\[\e[0;34m\]'
+    local DARK_BLUE='\[\e[1;34m\]'
+    local RED='\[\e[0;31m\]'
+    local DARK_RED='\[\e[1;31m\]'
+    local NO_COLOR='\[\e[0m\]'
+    local COLOR=${NO_COLOR}
+    local BG='\[\e[47m\]'       # light grey background
+    
+    local Who SP
+    [[ "$USER" != 'marantz' ]] && Who="$USER@"
+
+    case $TERM in
+         screen*|xterm*|rxvt*)
+             TITLEBAR="\[\033]0;${Who}${host}\007\]"
+
+            # make prompt colorful when I'm root
+            [[ $(id -u) -eq 0 ]] && COLOR=${RED}
+
+            # let me know if I'm deep
+	    lvl=$SHLVL
+	    # iTerm2 ignore that we are running under login
+	    IFS=' ' read -a parent <<< $(ps -o command= $PPID)
+	    [[ $parent = 'login' ]] && lvl=$(( lvl - 1 ))
+
+	    if [[ $TERM = 'screen' ]]; then
+		# we expect another level if under screen
+		lvl=$(( lvl - 1 ))
+		SP=${BLUE}S${NO_COLOR}
+	    fi
+
+	    [[ $lvl -gt 1 ]] \
+		&& lvl="${BG}$(( SHLVL - 1))${NO_COLOR}" \
+		|| unset lvl
+            ;;
+        *)
+            # no titlebar or colors
+            unset TITLEBAR COLOR NO_COLOR
+
+            # let me know if I'm deep
+            [[ $SHLVL -gt 1 ]] && lvl="${SHLVL}"
+            ;;
+    esac
+
+    # limit directory to last 20 characters
+    Pwd=${PWD#$HOME/}
+    [[ ${#Pwd} -lt 20 ]] && Wd=${Pwd} || Wd=" ${Pwd:${#Pwd}-20:20}"
+
+    # based on ideas from /usr/bin/collins_prompt.sh
+    # source /etc/environment to pick up any changes in status
+    [[ -f /etc/environment ]] && source /etc/environment &>/dev/null
+
+    local NP CS CP
+
+    # nopuppet indicator
+    if [[ -f /tmp/puppet_maintenance ]]; then
+	NP=${DARK_RED}n
+    fi
+
+    # figure out what the appropriate color is based on status
+    case "$COLLINS_STATUS" in
+	Maintenance) CS="${DARK_RED}M${NO_COLOR}" ;;
+	Provision*)  CS="${RED}P${NO_COLOR}"      ;;
+	New)         CS="${BLUE}N${NO_COLOR}"     ;;
+	Incomplete)  CS="${BLUE}I${NO_COLOR}"     ;;
+	*)           CS=${NO_COLOR}               ;;
+    esac
+
+    case "$POOL" in
+	*DEVEL*|*TEST*) CP=${BLUE}     ;;
+	*)              CP=${NO_COLOR} ;;
+    esac
+
+    local spacer
+    [ -n "$SP$NP$CS$lvl" ] && spacer=' '
+    PS1="$TITLEBAR\
+${SP}\
+${NP}\
+${CS}\
+${lvl}\
+${spacer}\
+${COLOR}${Who}\
+${CP}\
+${host}\
+${COLOR}:\
+${Wd}\
+\\\$ ${NO_COLOR}"
+}
+
+export PROMPT_COMMAND=prompt

@@ -1,0 +1,35 @@
+#! /bin/bash
+# start a remote session that will survive disconnect
+
+# support session names
+[[ -n $2 ]] && ss="-S $2 -t $2"
+exec ssh -t "$1"  screen -DR $ss
+
+# attach to (or create) the default session
+##exec ssh -A -t "$1" 'tmux has -t0 2>/dev/null && tmux attach -d -t0 || tmux'
+
+# dtach is light weight and only handles detaching
+#ssh -A -t vops dtach -A .dtach.socket -z -r winch /bin/bash -l
+
+############# based on will's sshw
+# copy my ssh key
+# use ssh agent forwarding instead
+#ssh $1 'if [ ! -d /home/will/.ssh ]; then mkdir -p /home/will/.ssh; fi;'
+#scp -q $HOME/.ssh/id_rsa $1:/home/will/.ssh/
+# rsync $HOME/.ssh/id_rsa $1:/home/.ssh/
+
+# make sure my ssh key is added to ssh-agent
+##ssh-add ~/.ssh/id_rsa
+
+# copy and run the init_dots script
+ssh -n $1 'mkdir src; cd src; git clone https://github.com/roymarantz/dotfile.git; ./INSTALL'
+
+
+#if [[ $host =~ ^(ops|dev|cd) ]]; then
+#    cmd=mosh
+#else
+#cmd=ssh
+#fi
+
+# ssh into the box
+exec ssh $1 "$*"

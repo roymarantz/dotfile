@@ -1,0 +1,21 @@
+#! /bin/bash
+# -*- shell-script -*-
+
+ehome=/home/marantz/emacs-25.1
+
+if [[ -d $ehome ]]; then
+    export PATH=${ehome}/bin:$PATH
+    emacs=${ehome}/bin/emacs
+else
+    if [[ -r /Applications/Emacs.app/Contents/MacOS/Emacs ]]; then
+	emacs=/Applications/Emacs.app/Contents/MacOS/Emacs
+    elif [[ -r /usr/bin/emacs ]]; then
+	emacs=/usr/bin/emacs
+    else
+	echo "No emacs found, you loose" 1>&2
+	exit 1
+    fi
+fi
+unset ehome
+
+$DEB exec $emacs "$@"

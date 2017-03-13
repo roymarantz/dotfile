@@ -1,0 +1,20 @@
+#! /bin/bash
+# -*- shell-script -*-
+# based on https://gist.github.com/pixelhandler/5718585
+
+# Prevents (force) pushing to master
+
+BRANCH=`git rev-parse --abbrev-ref HEAD`
+PUSH_COMMAND=`ps -ocommand= -p $PPID`
+#PROTECTED_BRANCHES="^(master|dev|release-*|patch-*)"
+PROTECTED_BRANCHES="^master"
+FORCE_PUSH="force|delete|-f"
+
+if [[ "$PUSH_COMMAND" =~ $FORCE_PUSH ]]; then
+    # allow force push
+    exit 0
+elif [[ "$BRANCH" =~ $PROTECTED_BRANCHES ]]; then
+   echo "Push to protected branch '$BRANCH' stopped by pre-push hook" 1>&2
+   exit 1
+fi
+exit 0

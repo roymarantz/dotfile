@@ -1,0 +1,29 @@
+# from http://arstechnica.com/civis/viewtopic.php?t=1128061
+# [merge]
+#         tool = ediff
+# [mergetool "ediff"]
+#         cmd = emacs --eval \"(ediff-merge-files-with-ancestor \\\"$LOCAL\\\" \\\"$REMOTE \\\" \\\"$BASE\\\" nil \\\"$MERGED\\\")\"
+[user]
+	name = Roy Marantz
+	email = marantz@tumblr.com
+[core]
+	excludesfile = /home/marantz/.gitignore
+[push]
+	default = simple
+[alias]
+	ci = commit
+	ca = commit -a
+	s = status
+	br = branch
+	co = checkout
+	l  = log
+	ll  = log -p
+	lg = log --graph --pretty=format:'%Cred%h%Creset -%C(yellow)%d%Creset %s %Cgreen(%cr) %C(bold blue)<%an>%Creset' --abbrev-commit --date=relative
+	poH = push origin HEAD
+	cia = commit --amend --no-edit
+	caa = commit -a --amend --no-edit
+[rebase]
+	autosquash = true
+[include]
+	# in case we want to cache credentials
+	path = .gitcredential

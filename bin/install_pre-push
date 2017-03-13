@@ -1,0 +1,25 @@
+#! /bin/bash
+# -*- shell-script -*-
+# based on https://gist.github.com/stefansundin/d465f1e331fc5c632088
+
+# install a Git pre-push hook that prevents pushing the master branch.
+# Install in current Git repo
+
+GITROOT=`git rev-parse --show-toplevel 2> /dev/null`
+
+if [ "$GITROOT" == "" ]; then
+    echo This does not appear to be a git repo 1>&2
+    exit 1
+fi
+
+if [ -f "$GITROOT/.git/hooks/pre-push" ]; then
+    cat <<EOF
+There is already a pre-push hook installed. Delete it first.
+    rm $GITROOT/.git/hooks/pre-push
+EOF
+    exit 2
+fi
+
+set -xe
+ln -s $HOME/src/dotfile/pre-push "$GITROOT/.git/hooks/pre-push"
+chmod +x "$GITROOT/.git/hooks/pre-push"

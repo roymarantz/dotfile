@@ -1,0 +1,17 @@
+# how I like tmux
+
+# I use C-b but not C-\
+unbind C-b
+set prefix C-\
+set -g prefix C-\
+#bind \ send-prefix
+
+# turn off the status line globally
+set-option -g status off
+bind-key C-s set -g status
+
+# lots of history
+set-option -g history-limit 10000
+
+# hotkeyed C-\ m to toggel synchronize-panes which links window input
+bind m set -w synchronize-panes

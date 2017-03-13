@@ -1,0 +1,11 @@
+#! /opt/ruby/2.3/bin/ruby
+# -*- ruby -*-
+
+require 'collins_auth'
+require 'pp'
+
+collins = Collins::Authenticator.setup_client
+ARGV.each do |tag|
+  a = collins.get tag
+  puts pp(a)
+end

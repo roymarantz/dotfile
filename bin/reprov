@@ -1,0 +1,99 @@
+#! /usr/bin/env ruby
+# -*- ruby -*-
+# reprovision a node with the same attributes as it has
+
+require 'optparse'
+require 'collins_auth'
+require 'etc'
+
+options = {
+  :delay => 10
+}
+OptionParser.new do |opts|
+  opts.on('-D', '--Delay N', Float,
+          'Delay between each asset to not overwhelm Collins') do |n|
+    options[:delay] = n
+  end
+
+  opts.on('-n', '--dryrun', 'dryrun - say what would happen') do |v|
+    options[:dryrun] = true
+  end
+
+  opts.on('-f', '--force', 'force reprov unless allocated state') do |v|
+    options[:force] = true
+  end
+end.parse!
+
+c = Collins::Authenticator.setup_client :timeout => 120
+ARGV.each_with_index do |tag,index|
+  # normalize into asset tag format
+  tag = '%06d' % (tag.to_i) if tag.match(/^\d+$/)
+  begin
+    asset = c.get(tag) # the tag of the machine you want to do
+  rescue
+    puts "ERROR getting asset for tag '#{tag}': skipping"
+    next
+  end
+  unless asset
+    puts "#{tag} is not an asset"
+    next
+  end
+
+  status = asset.status
+  if status =~ /^allocated/i
+    puts "#{asset.tag} #{asset.hostname} in #{status}, skipping"
+    next
+  end
+
+  if not options[:force] and status =~ /^provisioning/i
+    puts "#{asset.tag} #{asset.hostname} in #{status}, skipping"
+    next
+  end
+
+  if status !~ /^maintenance/i
+    # TODO should make sure machine isn't taking traffic
+    if options[:dryrun]
+      print 'would have: '
+    else
+      c.set_status!(asset, "Maintenance",
+                    "I'm about to reprovision this machine",
+                    "MAINT_NOOP")
+    end
+    puts "set #{asset.tag}/#{asset.hostname} to Maintenance NOOP"
+  end
+
+  def has_value v
+    not v.nil? and not v.empty?
+  end
+
+  attrs={}
+  attrs[:profile] = "#{asset.nodeclass}"
+  attrs[:primary_role] = asset.primary_role
+  attrs[:secondary_role] = asset.secondary_role if has_value(asset.secondary_role)
+  attrs[:pool] = asset.pool
+  # preserve these too
+  attrs[:suffix] = asset.suffix if has_value(asset.suffix)
+  attrs[:contact] = asset.contact if has_value(asset.contact)
+  attrs[:contact_notes] = asset.contact_notes if has_value(asset.contact_notes)
+  attrs[:touch_me] = asset.touch_me if has_value(asset.touch_me)
+  attrs[:ks_url] = asset.ks_url if has_value(asset.ks_url)
+
+  begin
+    unless options[:dryrun]
+      s = c.provision asset, "#{asset.nodeclass}", Etc.getlogin, attrs
+    else
+      s = 'OK'
+      print "would have: "
+    end
+    puts "reprovisioning #{asset.tag} as #{attrs}: #{s}"
+  rescue Exception => e
+    puts "ERROR setting provision on asset #{asset.tag} #{asset.hostname}: #{e}"
+  end
+  unless index >= (ARGV.count - 1) # only do between iterations
+    unless options[:dryrun]
+      # prevent Error processing request: Request rate limited by configuration
+      puts "sleeping #{options[:delay]} so Collins doesn't get overwhelmed"
+      sleep options[:delay]
+    end
+  end
+end

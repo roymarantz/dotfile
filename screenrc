@@ -1,0 +1,49 @@
+# .screenrc
+
+# screen -D -R  # connect or create
+# ^^ d  # detach
+
+# I use C-a all the time, choose another escape key
+## Control-^ (usually Control-Shift-6) the only key not used by emacs
+escape ^^^^
+
+# keep ssh-agent forwarding working
+setenv SSH_AUTH_SOCK $HOME/.ssh/ssh_auth_sock
+
+## do not trash BackSpace, usually DEL
+#bindkey -k kb
+#bindkey -d -k kb
+#
+## do not trash Delete, usually ESC [ 3 ~
+#bindkey -k kD
+#bindkey -d -k kD
+
+#startup_message off
+
+#hardstatus string '%{gk}[%{wk}%?%-Lw%?%{=b kR}(%{W}%n*%f %t%?(%u)%?%{=b kR})%{= w}%?%+Lw%?%? %{g}][%{d}%l%{g}][ %{= w}%Y/%m/%d %0C:%s%a%{g} ]%{W}'
+#hardstatus alwayslastline
+
+#caption always '%{gk}%{wk}%?%-Lw%?%{=b kR}%{W}%n*%f %t%?%{=b kR}%{= w}%?%+Lw%?%? %{g}%{W}'
+# eliminate different status lines
+hardstatus ignore
+caption splitonly
+
+#defflow on # will force screen to process ^S/^Q
+
+#deflogin on			# maintain utmp
+
+vbell on
+vbell_msg "   Wuff  ----  Wuff!!  "
+
+# detach on hangup
+autodetach on
+
+defshell -bash			# pretend to be a login bash shell
+
+defscrollback 10000
+# allow scrollback to work through iterm2 by
+# saying the terminal doesn't have an alternate screen http://aperiodic.net/screen/faq
+termcapinfo xterm* ti@:te@
+
+# don't kill window after the process died
+# zombie "^["

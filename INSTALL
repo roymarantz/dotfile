@@ -1,0 +1,144 @@
+#! /bin/bash
+# install the dotfiles from this directory
+
+while getopts 'dDnf' ARGV
+do
+    case $ARGV in
+	d) DEB=echo ;;
+	H) HOOKS=1 ;;
+	D) DIFF='diff -bC 0' ;;
+	n)  DRYRUN='-n' ;;
+	f)  FORCE=1 ;;
+	?) cat <<EOF
+usage: $0 [-n] [-f]
+where: -n don't change anything, dryrun
+          -f force a change
+EOF
+	    exit
+	    ;;
+    esac
+done
+shift $((OPTIND-1))
+SELECTOR="$1"
+
+function DryRun {
+    if [[ ! -z "$DRYRUN" ]]; then
+	printf "would have %s\n" "$1"
+	false
+    else
+	echo "$1"
+	true
+    fi
+}
+
+pwd=`pwd`
+function link {			# link to someplace in HOME
+    src="${pwd}/$1"
+    case $# in
+	1)  dst="$HOME/.$1" ;;
+	2)  dst="$HOME/.$2" ;;
+	3)  dst="$HOME/$2/$3" ;;
+	*)  echo 'wrong number of arguments to link' 1>&2
+	    exit 1
+	    ;;
+    esac
+    link_ "$src" "$dst"
+}
+
+function link_ {		# internal worker for arbitrary links
+    src="$1"
+    dst="$2"
+    # see if it is set up correctly already
+    old=`readlink "$dst"`
+    [[ "$src" == "$old" ]] && return
+
+    # if not see if we can fix it
+    [[ ! -z "$FORCE" ]] && [[ -e "$dst" ]] \
+	&& DryRun "mv $dst ${dst}.OLD" && $DEB mv "$dst" "${dst}.OLD"
+    if [[ -e "$dst" ]]; then
+	if [[ -z "$DIFF" ]]; then
+	    echo "$dst already exists, ignoring"
+	else
+	    $DIFF $dst $src
+	fi
+    else
+	DryRun "linking $src to $dst" && $DEB ln -s "$src" "$dst"
+    fi
+}
+
+# return files matching pattern filter with ARGV
+function files {
+    if [[ -z "$SELECTOR" ]]; then
+	ls $1 2> /dev/null
+    else
+	    ls $1 2> /dev/null | grep "$SELECTOR"
+    fi
+}
+
+case `uname` in
+     Darwin)
+		for f in *.OSX
+		do
+		    link $f `basename $f .OSX`
+		done
+		;;
+    Linux)
+	       for f in *.LINUX
+	       do
+		   link $f `basename $f .LINUX`
+	       done
+	       # link stuff to avoid ruby version hell
+#	       for f in /opt/ruby-1.9.2/bin/collins-shell \
+#		        /opt/ruby-1.9.2/bin/collins-notify
+#	       do
+#		   [[ -x "$f" ]] && link "$f" bin/`basename $f`
+#	       done
+	       ;;
+esac
+
+function ssh_prep {
+    if [[ ! -d "$HOME/.ssh" ]]; then
+	DryRun "mkdir ~/.ssh" && $DEB mkdir "$HOME/.ssh"
+    fi
+    chmod 700 "$HOME/.ssh"
+}
+    
+for f in *
+do
+    [[ -f "$f" ]] || continue
+    echo "$f" | grep -wqf IGNORE && continue
+    case "${f}" in
+	*.OSX | *.LINUX | *.pp ) ;;
+	*~ | *.BAK | *.bak | *#  | \#* ) ;;
+	post-merge.hook)
+	    link_ ../../post-merge.hook .git/hooks/post-merge
+	    chmod a+x post-merge.hook
+	    ;;
+	ssh_config)
+	    ssh_prep
+	    link ssh_config ssh/config
+	    ;;
+	ssh_rc)
+	    ssh_prep
+	    link ssh_rc ssh/rc
+	    ;;
+	ssh_authorized_keys)
+	    ssh_prep
+	    link ssh_rc ssh/authorized_keys
+	    ;;
+	*) link $f   ;;
+    esac
+done
+./post-merge.hook		# fix permissions for sensitive files
+
+if [[ ! -d "$HOME/bin" ]]; then
+    DryRun 'mkdir ~/bin' && $DEB  mkdir "$HOME/bin"
+fi
+for f in bin/*
+do
+    [[ -x "$f" ]] || continue
+    case "$f" in
+	*~ | *.BAK | *.bak | *#  | \#* ) ;;
+	*) link $f bin `basename $f` ;;
+    esac
+done

@@ -1,0 +1,12 @@
+#file of files to not install
+BS
+IGNORE
+INSTALL
+inrange
+org
+outofrange
+post-merge.hook
+pre-push
+prompt-command
+puppet.pre-commit.hook
+start-screensaver.scpt

@@ -1,0 +1,23 @@
+# /bin/bash
+# this is meant to be sourced
+
+export PATH=`echo "
+    $HOME/bin
+#    $HOME/bin/packer
+
+    /opt/ruby/2.3/bin
+    $HOME/.rvm/bin
+
+    $HOME/go/bin
+    /usr/local/go/bin
+
+    $HOME/.cabal/bin
+    /Applications/ghc-7.10.1.app/Contents/bin
+    $HOME/Library/Haskell/bin
+    /usr/hs/bin
+
+    $PATH
+"  | perl -e 'BEGIN{ %SEEN={}; sub isnew {$SEEN{$_[0]}++; $SEEN{$_[0]} < 2}}' \
+          -e 'while (<>) { s/#.+//; s/^\s+//; next unless /\S/; ' \
+	  -e              'chomp; push @F, split(":", $_) }' \
+          -e 'print join(":", grep( -d $_ && isnew($_), @F))'`
