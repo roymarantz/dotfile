@@ -1,4 +1,1 @@
-%_signature gpg
-%_gpg_path ~/.gnupg
-%_gpg_name Tumblr Ops <ops@tumblr.com>
-%_gpgbin /usr/bin/gpg
+../tumblr-dotfiles/rpmmacros

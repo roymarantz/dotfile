@@ -1,13 +1,14 @@
 #! /bin/bash
 
 # to be used in PROMPT_COMMAND on bash
-# replaces stuff tumblr supplies to be less obtrusive
+# replaces stuff my employer supplies to be less obtrusive
+# make employers security crazy's happy by not saying who they are
 
 function prompt {
     local host TITLEBAR lvl
     case $(hostname) in
-	UNKNOWN-*.yahoo.com)                    host='laptop'  ;;
-        tumblr-MacBookAir-990350*)         host='laptop'  ;;
+	fnord*.yahoo.com)                    host='laptop'  ;;
+        MacBookAir*)         host='laptop'  ;;
 	*)
 	    host='\H\'
 	    ;;

@@ -1,6 +1,8 @@
 #! /bin/bash
 # bootstrap a new box with my setup
 
+[[ -f secrets ]] && source secrets
+
 for REM in "$@"; do
     # make sure github.com's ssh key is known so the clone doesn't ask
     # clone my dotfile repo
@@ -11,7 +13,7 @@ for REM in "$@"; do
       'grep -q github.com ~/.ssh/known_hosts || ssh-keyscan -t rsa github.com >> ~/.ssh/known_hosts' \
       'cd ~/src; test -d dotfile || git clone git@github.com:roymarantz/dotfile.git' \
       'cd ~/src/dotfile; git pull;' \
-      'cd ~/src; test -d tumblr-dkcerfiles || git clone git@github.tumblr.net:marantz/tumblr-dotfiles.git' \
+      'cd ~/src; test -d tumblr-dotfiles || git clone git@${TGITH}:marantz/tumblr-dotfiles.git' \
       'cd ~/src/dotfile; git pull;' \
       'cd ~/src/dotfile; ./INSTALL ${FORCE}'
     do
