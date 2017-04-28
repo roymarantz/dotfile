@@ -2,19 +2,24 @@
 # -*- shell-script -*-
 # mailH - send html or preformated plain text mail message
 
+MAIL='sendmail -t'
 pre=1
 
 usage() {
     cat <<EOF 1>&2
-Usage: $0 [-s subject] [-p] TO
+Usage: $0 [-n] [-p] [-s subject] TO
 where: -p supress html <pre> </pre> tags
+       -n don't send the mail, just output to stdout
        TO comma separated email addresses to recieve mail
 EOF
     exit 1
 }
 
-while getopts ":s:p" o; do
+while getopts ":s:pn" o; do
     case "${o}" in
+	n)
+	    MAIL='cat'
+            ;;
         s)
             subject="Subject: ${OPTARG}"
             ;;
@@ -30,10 +35,12 @@ shift $((OPTIND-1))
 
 [[ $# -ne 1 ]] && usage
 
-(echo "To: ${1}"; \
- [[ -n $subject ]] && echo "$subject"; \
- echo  "Content-Type: text/html"; \
- [[ -n $pre ]] && echo '<pre>'; \
- cat ; \
- [[ -n $pre  ]] && echo '</pre>'; \
-) |sendmail -t
+(
+    echo "To: ${1}"; \
+    [[ -n $subject ]] && echo "$subject"; \
+    echo  "Content-Type: text/html"; \
+    echo '' ; \
+    [[ -n $pre ]] && echo '<pre>'; \
+    cat ; \
+    [[ -n $pre  ]] && echo '</pre>'; \
+) | $MAIL
