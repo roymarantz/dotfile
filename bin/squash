@@ -1,0 +1,8 @@
+#! /usr/bin/perl -n
+# -*- perl -*-
+# squash comments and blank lines from stdin to stdout
+
+s/#.*$//;
+next if /^\s*$/ and $last_line == $_;
+$last_line = $_;
+print $_;
