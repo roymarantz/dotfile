@@ -28,3 +28,5 @@ maybe_source "$HOME/.bashrc"
 if [[ -x "/usr/local/bin/brew" ]]; then
     maybe_source `brew --repository`/Library/Contributions/brew_bash_completion.sh
 fi
+
+[[ $HOME/.yubiagent/sock ]] && export SSH_AUTH_SOCK=$HOME/.yubiagent/sock
