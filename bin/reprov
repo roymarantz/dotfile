@@ -25,7 +25,7 @@ OptionParser.new do |opts|
 end.parse!
 
 c = Collins::Authenticator.setup_client :timeout => 120
-ARGV.each_with_index do |tag,index|
+ARGV.each_with_index do |tag, index|
   # normalize into asset tag format
   tag = '%06d' % (tag.to_i) if tag.match(/^\d+$/)
   begin
@@ -68,27 +68,43 @@ ARGV.each_with_index do |tag,index|
 
   attrs={}
   attrs[:profile] = "#{asset.nodeclass}"
+  attrs[:contact] = asset.contact if has_value(asset.contact)
+  attrs[:suffix] = asset.suffix if has_value(asset.suffix)
   attrs[:primary_role] = asset.primary_role
   attrs[:secondary_role] = asset.secondary_role if has_value(asset.secondary_role)
   attrs[:pool] = asset.pool
-  # preserve these too
-  attrs[:suffix] = asset.suffix if has_value(asset.suffix)
-  attrs[:contact] = asset.contact if has_value(asset.contact)
-  attrs[:contact_notes] = asset.contact_notes if has_value(asset.contact_notes)
-  attrs[:touch_me] = asset.touch_me if has_value(asset.touch_me)
-  attrs[:ks_url] = asset.ks_url if has_value(asset.ks_url)
+
+  # these can't be set by #provision but should be preserved
+  xattrs = {}
+  xattrs[:contact_notes] = asset.contact_notes if has_value(asset.contact_notes)
+  xattrs[:touch_me] = asset.touch_me if has_value(asset.touch_me)
+  xattrs[:ks_url] = asset.ks_url if has_value(asset.ks_url)
+  xattrs[:pod_cidr]   = asset.pod_cidr   if has_value(asset.pod_cidr)
+  xattrs[:no_dex]     = asset.no_dex     if has_value(asset.no_dex)
+  xattrs[:puppet_env] = asset.puppet_env if has_value(asset.puppet_env)
 
   begin
     unless options[:dryrun]
       s = c.provision asset, "#{asset.nodeclass}", Etc.getlogin, attrs
+      begin
+        unless options[:dryrun]
+          sx = c.set_multi_attribute!(asset, xattrs)
+        else
+          sx = 'OK'
+        end
+      rescue Exception => e
+        puts "ERROR setting attrs on asset #{asset.tag} #{asset.hostname}: #{e}"
+      end
     else
       s = 'OK'
       print "would have: "
     end
     puts "reprovisioning #{asset.tag} as #{attrs}: #{s}"
+    puts "   also setting #{attrs}: #{sx}"
   rescue Exception => e
     puts "ERROR setting provision on asset #{asset.tag} #{asset.hostname}: #{e}"
   end
+
   unless index >= (ARGV.count - 1) # only do between iterations
     unless options[:dryrun]
       # prevent Error processing request: Request rate limited by configuration

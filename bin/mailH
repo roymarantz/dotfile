@@ -4,18 +4,20 @@
 
 MAIL='sendmail -t'
 pre=1
+CONVERTER=`basename $0`ansi2html.sh
 
 usage() {
     cat <<EOF 1>&2
 Usage: $0 [-n] [-p] [-s subject] TO
 where: -p supress html <pre> </pre> tags
        -n don't send the mail, just output to stdout
+       -c convert ansi control sequences to html
        TO comma separated email addresses to recieve mail
 EOF
     exit 1
 }
 
-while getopts ":s:pn" o; do
+while getopts ":s:pcn" o; do
     case "${o}" in
 	n)
 	    MAIL='cat'
@@ -23,6 +25,10 @@ while getopts ":s:pn" o; do
         s)
             subject="Subject: ${OPTARG}"
             ;;
+        p)
+            htmlize=1
+	    unset pre
+	    ;;
         p)
             unset pre
             ;;
@@ -41,6 +47,7 @@ shift $((OPTIND-1))
     echo  "Content-Type: text/html"; \
     echo '' ; \
     [[ -n $pre ]] && echo '<pre>'; \
-    cat ; \
+    [[ -n $htmlize ]] && $CONVERTER || cat \
+    ; \
     [[ -n $pre  ]] && echo '</pre>'; \
 ) | $MAIL

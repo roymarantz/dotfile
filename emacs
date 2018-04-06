@@ -394,7 +394,7 @@ of FILE in the current directory, suitable for creation"
  '(json-reformat:indent-width 2)
  '(package-selected-packages
    (quote
-    (anaconda-mode yaml-mode rvm robe rainbow-delimiters puppet-mode org multiple-cursors markdown-mode logstash-conf json-mode hi2 flycheck-haskell expand-region enh-ruby-mode company-inf-ruby company-ghc clojure-mode auto-complete)))
+    (pdf-tools graphviz-dot-mode anaconda-mode yaml-mode rvm robe rainbow-delimiters puppet-mode org multiple-cursors markdown-mode logstash-conf json-mode hi2 flycheck-haskell expand-region enh-ruby-mode company-inf-ruby company-ghc clojure-mode auto-complete)))
  '(safe-local-variable-values (quote ((auto-save-default) (eval mobileorg)))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
