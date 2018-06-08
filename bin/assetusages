@@ -18,6 +18,9 @@ OptionParser.new do |opts|
   opts.on('-s', '--subject SUBJECT', 'subject for the mail') do |v|
     options[:subject] = v
   end
+  opts.on('-H', '--hardware-classification', 'only hardware classification') do |v|
+    options[:only_hard_class] = v
+  end
   opts.on('-d', '--debug', 'debug this script with only a few assets') do |v|
     options[:debug] = v
   end
@@ -29,7 +32,6 @@ collins = Collins::Authenticator.setup_client
 
 nodeclasses = Hash.new(0)
 status = Hash.new(0)
-hardware = Hash.new(0)
 hardware_product = Hash.new(0)
 hardware_vendor = Hash.new(0)
 hardware_tag = Hash.new(0)
@@ -55,7 +57,9 @@ svr2kind = Hash[
   collins.public_send(finder,
                       :type => 'configuration',
                       :tag => 'nodeclassifier*').map do |asset|
-    asset.tag.split('_')[1,2].reverse
+    # nodeclassifier _ name _ vlan _ svr
+    _, name, _, svr = asset.tag.split('_')
+    [svr, name]
   end ]
 
 def vlan_id asset
