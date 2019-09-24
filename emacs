@@ -3,6 +3,10 @@
 ;; prevent initial splash screen which would be always shown
 (setq inhibit-splash-screen t)
 
+;;; default frame (window) size
+(add-to-list 'default-frame-alist '(height . 30))
+(add-to-list 'default-frame-alist '(width . 81))
+
 (defalias 'yes-or-no-p 'y-or-n-p)	; yes/no is too long to type
 (setq backup-inhibited nil)		;I want backups
 (setq backup-by-copying-when-linked t)	; Preserve hard links to the file you’re editing
@@ -64,7 +68,7 @@
 
 ;;;;;;;;;;;;;;;;;;;;;;; mac os x
 (when (eq system-type 'darwin)
-  (tool-bar-mode -1)			; loose the toolbar
+  ;;;(tool-bar-mode -1)			; loose the toolbar
 
   (global-set-key (kbd "s-g") 'goto-line)
   (global-set-key [triple-wheel-left] 'move-beginning-of-line)
@@ -85,12 +89,12 @@
     ;;; (set-fontset-font t 'hangul (font-spec :name "NanumGothicCoding"))
   ;; you may want to add different for other charset in this way.
 
-  ;; multiple cursors (on laptop only for now)
-  (require 'multiple-cursors)
-  (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
-  (global-set-key (kbd "C->") 'mc/mark-next-like-this)
-  (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
-  (global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
+;;   ;; multiple cursors (on laptop only for now)
+;;   (require 'multiple-cursors)
+;;   (global-set-key (kbd "C-S-c C-S-c") 'mc/edit-lines)
+;;   (global-set-key (kbd "C->") 'mc/mark-next-like-this)
+;;   (global-set-key (kbd "C-<") 'mc/mark-previous-like-this)
+;;   (global-set-key (kbd "C-c C-<") 'mc/mark-all-like-this)
 
   (eval-after-load "flyspell"
     '(progn
@@ -100,7 +104,7 @@
        (define-key flyspell-mouse-map [mouse-2] nil) ))
 
   ;;; auto-complete
-  (ac-config-default)
+;;  (ac-config-default)
 
   ;;; better ruby support aka ide
   ;(require 'rvm)
@@ -212,8 +216,8 @@ of FILE in the current directory, suitable for creation"
   (add-hook 'after-init-hook #'global-flycheck-mode)
   (eval-after-load 'flycheck
     '(add-hook 'flycheck-mode-hook #'flycheck-haskell-setup))
-  (require 'rainbow-delimiters)
-  (add-hook 'haskell-mode-hook 'rainbow-delimiters-mode)
+;;  (require 'rainbow-delimiters)
+;;  (add-hook 'haskell-mode-hook 'rainbow-delimiters-mode)
 
   ;; flycheck stuff (also see haskell stuff)
   (setq flycheck-check-syntax-automatically '(mode-enabled idle-change save))
@@ -293,10 +297,10 @@ of FILE in the current directory, suitable for creation"
 	("ACTIVE" . "Green")
 	("PAUSED" . "Orange")
 	("CANCELED" . (:foreground "Blue" :weight bold))))
-(require 'epa-file)
-(epa-file-enable)
-;; don't prompt for passphrase always
-(setq epa-file-cache-passphrase-for-symmetric-encryption t)
+;; (require 'epa-file)
+;; (epa-file-enable)
+;; ;; don't prompt for passphrase always
+;; (setq epa-file-cache-passphrase-for-symmetric-encryption t)
 
 ;;; Mobileorg Support
 (defun mobileorg ()
@@ -368,7 +372,7 @@ of FILE in the current directory, suitable for creation"
 (add-hook 'after-save-hook 'hlu-make-script-executable)
 
 (setq column-number-mode t)		;show columns in mode line
-; (set-scroll-bar-mode (quote left))
+(set-scroll-bar-mode nil)		;no vertical scroll bar
 
 (require 'saveplace)
 (setq save-place-file "~/.emacs.d/saved-places")
@@ -392,9 +396,10 @@ of FILE in the current directory, suitable for creation"
  '(haskell-process-type (quote cabal-repl))
  '(haskell-tags-on-save t)
  '(json-reformat:indent-width 2)
+ '(org-agenda-files (quote ("~/ToDo.org")))
  '(package-selected-packages
    (quote
-    (pdf-tools graphviz-dot-mode anaconda-mode yaml-mode rvm robe rainbow-delimiters puppet-mode org multiple-cursors markdown-mode logstash-conf json-mode hi2 flycheck-haskell expand-region enh-ruby-mode company-inf-ruby company-ghc clojure-mode auto-complete)))
+    (hide-lines pdf-tools graphviz-dot-mode anaconda-mode yaml-mode rvm robe rainbow-delimiters puppet-mode org multiple-cursors markdown-mode logstash-conf json-mode hi2 flycheck-haskell expand-region enh-ruby-mode company-inf-ruby company-ghc clojure-mode auto-complete)))
  '(safe-local-variable-values (quote ((auto-save-default) (eval mobileorg)))))
 (custom-set-faces
  ;; custom-set-faces was added by Custom.

@@ -26,3 +26,9 @@
 	caa = commit -a --amend --no-edit
 [rebase]
 	autosquash = true
+[url "git@git.ouroath.com:"]
+	insteadOf = https://git.ouroath.com/
+[url "git@opensource.git.corp.yahoo.com:"]
+	insteadOf = https://opensource.git.corp.yahoo.com/
+[url "git@partner.git.corp.yahoo.com:"]
+	insteadOf = https://partner.git.corp.yahoo.com/

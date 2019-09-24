@@ -4,6 +4,7 @@
 export PATH=`echo "
     $HOME/bin
 #    $HOME/bin/packer
+     $HOME/src/dev-tools
 
     /opt/ruby/2.3/bin
     $HOME/.rvm/bin

@@ -1,0 +1,176 @@
+#! /opt/ruby/2.3/bin/ruby
+# -*- ruby -*-
+
+# sanity/consistency checks for collins info
+
+require 'optparse'
+require 'open3'
+require 'collins_client_helpers'
+require 'pp'
+
+options = {
+}
+
+OptionParser.new do |opts|
+  opts.on('-d', '--debug', 'debug this script with only a few assets') do |v|
+    options[:debug] = v
+  end
+end.parse!
+
+vlan_id2name = { 120 => 'Prod (120)', 121 => 'DMZ (121)', 122 => 'Tools (122)' }
+
+collins = Collins::Authenticator.setup_client
+
+finder = if options[:debug] then :find else :fetch_all_assets end
+collins_hardware_classes = Hash[
+  collins.public_send(finder,
+                      type: 'configuration',
+                      tag:  'nodeclassifier*').map do |asset|
+    # tag of the form: nodeclassifier_KIND_VLAN_SVR
+    parts = asset.tag.split('_')
+    if parts.size != 3
+      $stderr.puts "ERROR: bad forma nodeclassifier, skipping",
+           "  " +
+           [ 'TAG:', asset.tag,
+             'HARDWARE_SVR_TAG:', asset.hardware_svr_tag,
+             'NAME:', asset.name,
+             'NOTE:', asset.note
+           ].join(' ')
+      nil
+    else
+      # SVR, KIND
+      parts[1, 3].reverse
+    end
+  end.compact
+]
+
+nodeclasses = Hash.new(0)
+status = Hash.new(0)
+hardware = Hash.new(0)
+hardware_product = Hash.new(0)
+hardware_vendor = Hash.new(0)
+hardware_tag = Hash.new(0)
+hardware_classification = Hash.new(0)
+kernel = Hash.new(0)
+os_release = Hash.new(0)
+lef = Hash.new(0)
+vlan = Hash.new(0)
+
+@total = 0                      # number of assets
+
+def sanitise value
+  value = value.strip rescue ''
+  if value.empty?
+    'NOT SET'
+  else
+    value.to_s
+  end
+end
+
+finder = if options[:debug] then :find else :fetch_all_assets end
+svr2kind = Hash[
+  collins.public_send(finder,
+                      :type => 'configuration',
+                      :tag => 'nodeclassifier*').map do |asset|
+    asset.tag.split('_')[1,2].reverse
+  end ]
+
+def vlan_id asset
+  # collins should have a nicer way to do this
+  # this assume a single network interface which must be 'eth0'
+  asset.extras['LLDP']['INTERFACES'].first['VLANS'].first['ID'] rescue nil
+end
+
+db_nodeclass = Hash.new(0)
+db_hw_prod = Hash.new(0)
+db_hw_vendor = Hash.new(0)
+db_vlan = Hash.new(0)
+db_lef = Hash.new(0)
+db_kernel = Hash.new(0)
+db_os = Hash.new(0)
+db_svr = Hash.new(0)
+db_kind = Hash.new(0)
+
+collins.public_send(finder, :type => 'server_node').each do |asset|
+  # poor mans database
+  tag = asset.tag
+  if ! asset.tag.start_with?('vm')
+    db_nodeclass[tag] = sanitise asset.nodeclass
+    db_hw_prod[tag] = sanitise asset.hardware_product
+    db_hw_vendor[tag] = sanitise asset.hardware_vendor
+    db_vlan[tag] = sanitise vlan_id(asset)
+    db_lef[tag] = sanitise asset.bf2_lef
+    db_kernel[tag] = sanitise asset.kernel
+    db_os[tag] = sanitise asset.os_release
+    svr = asset.hardware_svr_tag
+    db_svr[tag] = sanitise svr
+    db_kind[tag] = svr2kind.fetch(svr, 'NOT SET')
+  end
+
+  # @total += 1
+  # nodeclasses[sanitise asset.nodeclass] += 1
+  # status[sanitise asset.status] += 1
+  # if asset.tag.start_with?('vm')
+  #   hardware_classification['VM'] += 1
+  # else
+  #   # these aren't set for VMs
+  #   hardware_product[sanitise asset.hardware_product] += 1
+  #   hardware_vendor[sanitise asset.hardware_vendor] += 1
+  #   svr = asset.hardware_svr_tag
+  #   hardware_tag[sanitise svr] += 1
+  #   hardware_classification[svr2kind.fetch(svr, 'NOT SET')] += 1
+  #   lef[sanitise asset.bf2_lef] += 1
+  #   vlan[vlan_id2name.fetch(vlan_id(asset), 'NOT SET')] += 1
+  # end
+  # kernel[sanitise asset.kernel] += 1
+  # os_release[sanitise asset.os_release] += 1
+end
+
+puts "total assets: " + db_nodeclass.size.inspect
+exit
+
+def percent value, total
+  ((value.to_f / total.to_f) * 100).round(2)
+end
+
+def dump_table label, table
+  begin
+    total = table.values.reduce(0, :+)
+    ["#{label}: total #{total}",
+     table.sort.map do |key, value|
+       ['', value, percent(value, total).to_s+'%', key].join("\t")
+     end
+    ].join("\n")
+  rescue => e
+    puts e.message
+  end
+end
+
+#message = [
+#  "total #{@total}",
+#  dump_table('Status', status),
+#  dump_table('Classification', hardware_classification),
+
+#  dump_table('Vlan (exclude VMs)', vlan),
+#  dump_table('SVR Tag (exclude VMs)', hardware_tag),
+#  dump_table('Model (exclude VMs)', hardware_product),
+#  dump_table('Vendor (exclude VMs)', hardware_vendor),
+#  dump_table('Kernel', kernel),
+#  dump_table('OS', os_release),
+#  dump_table('LEF (exclude VMs)', lef),
+  # this is long so put it last
+#  dump_table('Nodeclasses', nodeclasses) ].join("\n")
+#]
+if options[:mail_to]
+  Open3.popen2('/usr/sbin/sendmail -t') do |i, o, t|
+    i.puts "To: #{options[:mail_to]}",
+           "Subject: #{options[:subject]}",
+           'Content-Type: text/html',
+           '',
+           '<pre>', message, '</pre>'
+    i.close
+    puts o.gets
+  end
+else
+  puts message
+end

@@ -30,3 +30,9 @@ if [[ -x "/usr/local/bin/brew" ]]; then
 fi
 
 [[ -r $HOME/.yubiagent/sock ]] && export SSH_AUTH_SOCK=$HOME/.yubiagent/sock
+
+export SSH_AUTH_SOCK=/Users/marantz/.yubiagent/sock
+
+export SSH_AUTH_SOCK=/Users/marantz/.yubiagent/sock
+
+export SSH_AUTH_SOCK=/Users/marantz/.yubiagent/sock
