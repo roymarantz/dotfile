@@ -1,0 +1,216 @@
+#! /usr/bin/env ruby
+# -*- ruby -*-
+
+require 'collins_client_helpers'
+require 'optparse'
+
+class LogEntry
+  attr_reader :tag, :created, :created_by, :type, :message
+  def initialize(log_entry)
+    @tag = log_entry['TAG']
+    @created = log_entry['CREATED']
+    @created_by= log_entry['CREATED_BY']
+    @type = log_entry['TYPE']
+    @message = log_entry['MESSAGE']
+  end
+  def from_genesis?
+    message.include?(' :: ')
+  end
+end
+
+module Collins
+  class Client
+    def asset_logs(asset_or_tag, options = {sort: 'DESC'})
+      page = 0
+      result = []
+      loop do
+        #$stderr.puts "logs(#{asset_or_tag.inspect} page: #{page.inspect})"
+        ls = logs(asset_or_tag, options.merge({page: page,}))
+        #$stderr.puts "res.size: #{res.size}, empty?: #{res.empty?}"
+        break if ls.empty?
+        result << ls.map { |l| LogEntry.new(l) }
+        page += 1
+      end
+      result.flatten
+    end
+    # returns logobjects like
+    #<OpenStruct ID=3431754,
+    #  ASSET_TAG="SM01646", CREATED="2017-09-14T15:12:10",
+    #  CREATED_BY="muppet", FORMAT="text/plain", SOURCE="API",
+    #  TYPE="INFORMATIONAL",
+    #  MESSAGE="Initial intake successful, status now Incomplete">
+  end
+end
+
+@opts = { tags: []}
+OptionParser.new do |o|
+  o.banner = 'Usage: collins-asset-analyzer [options] [-t] TAG'
+
+  o.on('-tTAG', '--tags=t,u,v', Array, 'asset TAGs to work on') do |n|
+    @opts[:tags] = n
+  end
+  o.on('-v', '--[no-]verbose', 'Run verbosely') do |v|
+    @opts[:verbose] = v
+  end
+  o.on('-d', '--[no-]debug', 'program debuging') do |v|
+    @opts[:debug] = v
+  end
+  o.on('-h', '--help', 'Prints this help') do
+    puts o
+    exit
+  end
+end.parse!
+
+# def Dprint *msg
+#   puts msg.join(' ') if @opts[:debug]
+# end
+
+# def Dcat pre, msg
+#   if @opts[:debug]
+#     pre + ': ' + msg
+#   else
+#     msg
+#   end
+# end
+$stderr.sync = true if @opts[:debug]
+def Dtee pre, msg
+  msg = pre + ': ' + msg
+  if @opts[:debug]
+    $stderr.puts msg
+  end
+  puts 'Dtee: ' + msg
+  msg
+end
+
+@opts[:tags] = [@opts[:tags], ARGF.argv].flatten
+
+ if @opts[:tags].empty?
+   $stderr.puts 'No TAG specified'
+   exit 1
+ end
+
+collins = Collins::Authenticator.setup_client
+
+def summerized_state args
+  if args.kind_of?(Array)
+    ss = args.shift
+  else
+    ss = args
+    args = nil
+  end
+  status, state = ss.split(/:/)
+  if status.downcase == 'maintenance'
+    status = state
+    state = ''
+  end
+  if state.downcase == 'running'
+    state = ''                # not interresting
+  end
+  [status, state, args].compact.flatten
+end
+
+def state_to_s status, state
+  if state.empty?
+    status
+  else
+    [status, state].join(':')
+  end
+end
+
+def provisioning_summary(logs)
+  ls = logs.map(&:message).select do |l|
+    #puts l
+    l.include?('HARDWARE_PROBLEM') or
+      l.include?('ServiceNow ticket')
+  end
+  return ls
+end
+def provisioning_detailed(logs)
+  reboots = 0
+  puppet_run = 0
+  return logs.map do |l|
+    Dtee 'T', l.message.inspect
+    case l.message
+    when /^API call to PagerDuty/
+      what = l.message.split(/:/)[0]
+      Dtee 'A', what
+    when /opened hardware maintenance ticket/
+      who, what = l.message.split(/ /,2)
+      Dtee 'HMT', what
+    when /^Power event /
+      case l.message
+      when / success/
+        reboots += 1
+        if reboots == 1
+          Dtee 'RB', l.message
+        elsif reboots >= 6
+          Dtee 'RB', 'ERROR could not reboot node'
+        end
+      else
+        Dtee 'PE', [l.message, 'try', reboots].join(' ')
+      end
+    else
+      reboots = 0               # reset counter if not consecutive
+
+      case l.message
+      when /^Starting puppet run/
+        old_run = puppet_run
+        puppet_run = /^Starting puppet run (\d+)/.match(l.message)[1]
+        Dtee 'PR', ['Provisioning Puppet run number', puppet_run,
+                    (old_run == puppet_run ? 'WARNING: Puppet never ran' : '')
+                   ].join(' ')
+      when /^Puppet ran for/
+        what, why =
+              /(Puppet ran for \d+(?:\.\d*)?) seconds at (?:.+?) (ERROR: .+)$/.match(l.message)[1,2]
+        Dtee 'P', [what, 'secs', 'try', puppet_run, why,].join(' ')
+      when /Intake now complete|Initial intake successful/
+        Dtee 'I', l.message
+      when /Old status:state /
+        old_status, old_state = summerized_state \
+                                  /Old status:state \(([^)]+)\)/.match(l.message)[1]
+        new_status, new_state, raw_message = summerized_state \
+                                               /New status:state \(([^)]+)\)(.+)/.match(l.message)[1,2]
+        raw_message.slice! /^ - / # kill the prefix if it exists
+        case raw_message
+        when /Provisioning failed:/
+          new_status = 'Provisioning failed'
+          new_message = raw_message.slice(/^.*Provisioning failed: /)
+        when /^ - (.+)/
+          new_message = $1
+        else
+          new_message = raw_message
+        end
+        if new_status.downcase == 'maintenance'
+          new_status = new_state,
+          new_state = ''
+        end
+        Dtee 'ST', ['Collins state transisioned from',
+                    state_to_s(old_status, old_state),
+                    'to', state_to_s(new_status, new_state),
+                    'because', new_message].compact.join(' ')
+      when /Successfully provisioned /
+        nodeclass = /^Successfully provisioned server as (\S+)/.match(l.message)[1]
+        Dtee 'SP', ['Provisioning succeeded as', nodeclass].join(' ')
+      when /Provisioning failed: /
+        Dtee 'PF', l.message
+      end
+    end
+  end.compact
+end
+
+@opts[:tags].each do |tag|
+  logs = collins.asset_logs(tag) #, sort: 'ASC')
+  # sort: 'DESC' | 'ASC'
+
+  #log_types = Hash.new(0)
+  #logs.each {|l| log_types[ l['TYPE'] ] += 1}
+  #puts log_types
+
+  #select_logs = logs.select {|l| l.from_genesis? }
+  #puts select_logs.map {|l| [ l.created, l.message ].join(' ')}
+
+  # puts 'PROVISIONING_SUMMARY(LOGS)', provisioning_summary(select_logs)
+  puts "#{tag} log summary:", provisioning_summary(logs)
+
+  #puts logs.select {|l| l['TYPE'] == 'NOTE'}.map {|l| l['MESSAGE']}
+end
