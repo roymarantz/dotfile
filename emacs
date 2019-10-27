@@ -213,7 +213,7 @@ of FILE in the current directory, suitable for creation"
        (define-key haskell-mode-map (kbd "M-.") 'haskell-mode-jump-to-def-or-tag)
        (setq haskell-interactive-mode-eval-mode 'haskell-mode)
        ))
-  (add-hook 'after-init-hook #'global-flycheck-mode)
+  ;(add-hook 'after-init-hook #'global-flycheck-mode)
   (eval-after-load 'flycheck
     '(add-hook 'flycheck-mode-hook #'flycheck-haskell-setup))
 ;;  (require 'rainbow-delimiters)
@@ -372,7 +372,7 @@ of FILE in the current directory, suitable for creation"
 (add-hook 'after-save-hook 'hlu-make-script-executable)
 
 (setq column-number-mode t)		;show columns in mode line
-(set-scroll-bar-mode nil)		;no vertical scroll bar
+;(set-scroll-bar-mode nil)		;no vertical scroll bar
 
 (require 'saveplace)
 (setq save-place-file "~/.emacs.d/saved-places")

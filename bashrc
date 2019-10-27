@@ -54,21 +54,20 @@ alias psgrep='ps -ef | grep -v grep | grep'
 alias null='cat >/dev/null'
 alias Z=suspend
 alias uncolor='sed -r "s/\x1B\[([0-9]{1,2}(;[0-9]{1,2})?)?[m|K]//g"'
-alias kbprod='kubectl --context=bf2-prod'
-alias kbdev='kubectl --context=bf2-dev'
-alias kbtest='kubectl --context=bf2-test'
+#alias kbprod='kubectl --context=bf2-prod'
+#alias kbdev='kubectl --context=bf2-dev'
+#alias kbtest='kubectl --context=bf2-test'
 alias whatismyip='curl http://neuropunks.org/~cryptographrix/ 2>/dev/null && echo'
 
-if [[ -d /home/tumblr-push ]]; then
-    # pushshell related
-    alias pscp="sudo scp -i /home/tumblr-push/.ssh/id_rsa -P 2222"
-fi
+[[ -r ~/aws_aliases ]] && source ~/aws_aliases
 
 if [[ -d /etc/mock ]]; then
     alias mock5='mock -r centos-5.8-x86_64'
     alias mock6='mock -r SL-6-x86_64'
     alias mock7='mock -r SL-7-x86_64'
 fi
+
+PS1='\h:\w \$ '
 
 # prompt as I like even when puppet testing
 # use ~marantz instead of $HOME for sudo -s
@@ -84,3 +83,5 @@ unset pc
 #PERL_LOCAL_LIB_ROOT="/Users/marantz/perl5${PERL_LOCAL_LIB_ROOT:+:${PERL_LOCAL_LIB_ROOT}}"; export PERL_LOCAL_LIB_ROOT;
 #PERL_MB_OPT="--install_base \"/Users/marantz/perl5\""; export PERL_MB_OPT;
 #PERL_MM_OPT="INSTALL_BASE=/Users/marantz/perl5"; export PERL_MM_OPT;
+
+complete -C /usr/local/bin/vault vault

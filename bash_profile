@@ -9,10 +9,12 @@
 # if not an interactive shell, we are done
 [ -z "$PS1" ] && return
 
-[[ -x /usr/bin/emacs ]] && export EDITOR="/usr/bin/emacs"
-[[ -x "$HOME/bin/emacs" ]] && export EDITOR="$HOME/bin/emacs"
-export PAGER=/usr/bin/less
-export LESS='eiMqRwX'
+## [[ -x /usr/bin/emacs ]] && export EDITOR="/usr/bin/emacs"
+## [[ -x "$HOME/bin/emacs" ]] && export EDITOR="$HOME/bin/emacs"
+if [[ -x /usr/bin/less ]]; then
+   export PAGER=/usr/bin/less
+   export LESS='eiMqRwX'
+fi
 [[ -x $HOME/go ]] && export GOPATH="$HOME/go"
 
 # Hiding the beer mug emoji when finishing a build
@@ -28,11 +30,3 @@ maybe_source "$HOME/.bashrc"
 if [[ -x "/usr/local/bin/brew" ]]; then
     maybe_source `brew --repository`/Library/Contributions/brew_bash_completion.sh
 fi
-
-[[ -r $HOME/.yubiagent/sock ]] && export SSH_AUTH_SOCK=$HOME/.yubiagent/sock
-
-export SSH_AUTH_SOCK=/Users/marantz/.yubiagent/sock
-
-export SSH_AUTH_SOCK=/Users/marantz/.yubiagent/sock
-
-export SSH_AUTH_SOCK=/Users/marantz/.yubiagent/sock

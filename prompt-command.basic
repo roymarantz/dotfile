@@ -7,7 +7,7 @@
 function prompt {
     local host TITLEBAR lvl
     case $(hostname) in
-	fnord*.yahoo.com)                    host='laptop'  ;;
+	fnord*.yahoo.com)    host='laptop'  ;;
         MacBookAir*)         host='laptop'  ;;
 	*)
 	    host='\H\'
@@ -23,7 +23,7 @@ function prompt {
     local BG='\[\e[47m\]'       # light grey background
     
     local Who SP
-    [[ "$USER" != 'marantz' ]] && Who="$USER@"
+    [[ $USER != marantz ]] && [[ $USER != roy.marantz ]] && Who="$USER@"
 
     case $TERM in
          screen*|xterm*|rxvt*)
