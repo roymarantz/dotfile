@@ -5,9 +5,9 @@
 #         cmd = emacs --eval \"(ediff-merge-files-with-ancestor \\\"$LOCAL\\\" \\\"$REMOTE \\\" \\\"$BASE\\\" nil \\\"$MERGED\\\")\"
 [user]
 	name = Roy Marantz
-	email = marantz@tumblr.com
+	email = roy.marantz@clearme.com
 [core]
-	excludesfile = /home/marantz/.gitignore
+	excludesfile = /home/roy.marantz/.gitignore
 [push]
 	default = simple
 [alias]
